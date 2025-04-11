@@ -1,13 +1,156 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState } from 'react';
+import { MusicProvider, useMusicContext } from '@/context/MusicContext';
+import SongList from '@/components/SongList';
+import PlaylistList from '@/components/PlaylistList';
+import MiniPlayer from '@/components/MiniPlayer';
+import FullPlayer from '@/components/FullPlayer';
+import NewPlaylistDialog from '@/components/NewPlaylistDialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '@/components/ui/button';
+import { ListMusic, Library, Plus, RefreshCw, Zap } from 'lucide-react';
+
+const MusicApp: React.FC = () => {
+  const { 
+    songs, 
+    playlists, 
+    playerState, 
+    playSong, 
+    playPlaylist,
+    loadSongs,
+    createNfcTag
+  } = useMusicContext();
+  
+  const [isFullPlayerVisible, setIsFullPlayerVisible] = useState(false);
+  const [isNewPlaylistDialogOpen, setIsNewPlaylistDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSongSelect = (songId: string) => {
+    playSong(songId);
+  };
+
+  const handlePlaylistSelect = (playlistId: string) => {
+    playPlaylist(playlistId);
+  };
+
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    try {
+      await loadSongs();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTagNFC = () => {
+    // Create an NFC tag for whatever is currently playing
+    if (playerState.currentSong) {
+      createNfcTag(playerState.currentSong.id, null);
+    }
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen relative">
+      <header className="p-4 border-b border-gray-800 flex justify-between items-center">
+        <h1 className="text-xl font-bold text-white flex items-center">
+          <Zap size={24} className="mr-2 text-player-accent" />
+          SonicFlow
+        </h1>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="bg-transparent border-gray-700 text-white hover:bg-gray-800"
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="bg-transparent border-gray-700 text-white hover:bg-gray-800"
+            onClick={handleTagNFC}
+          >
+            <Zap size={16} className="mr-2" />
+            Crear NFC
+          </Button>
+        </div>
+      </header>
+      
+      <main className="flex-1 overflow-auto pb-24">
+        <Tabs defaultValue="songs" className="w-full">
+          <div className="sticky top-0 bg-player-background z-10 border-b border-gray-800">
+            <TabsList className="w-full bg-transparent border-b border-gray-800 rounded-none h-auto p-0">
+              <TabsTrigger 
+                value="songs" 
+                className="flex-1 rounded-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-player-primary py-4"
+              >
+                <ListMusic size={16} className="mr-2" />
+                Canciones
+              </TabsTrigger>
+              <TabsTrigger 
+                value="playlists" 
+                className="flex-1 rounded-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-player-primary py-4"
+              >
+                <Library size={16} className="mr-2" />
+                Listas
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          
+          <TabsContent value="songs" className="mt-0">
+            <SongList 
+              songs={songs}
+              onSongSelect={handleSongSelect}
+              currentSongId={playerState.currentSong?.id}
+            />
+          </TabsContent>
+          
+          <TabsContent value="playlists" className="mt-0">
+            <div className="p-4 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-white">Mis listas de reproducción</h2>
+              <Button 
+                onClick={() => setIsNewPlaylistDialogOpen(true)}
+                className="bg-player-primary hover:bg-opacity-90"
+                size="sm"
+              >
+                <Plus size={16} className="mr-2" />
+                Nueva lista
+              </Button>
+            </div>
+            
+            <PlaylistList 
+              playlists={playlists}
+              onPlaylistSelect={handlePlaylistSelect}
+            />
+          </TabsContent>
+        </Tabs>
+      </main>
+      
+      {playerState.currentSong && !isFullPlayerVisible && (
+        <MiniPlayer onExpandPlayer={() => setIsFullPlayerVisible(true)} />
+      )}
+      
+      {playerState.currentSong && isFullPlayerVisible && (
+        <FullPlayer onMinimizePlayer={() => setIsFullPlayerVisible(false)} />
+      )}
+      
+      <NewPlaylistDialog 
+        isOpen={isNewPlaylistDialogOpen}
+        onClose={() => setIsNewPlaylistDialogOpen(false)}
+      />
+    </div>
+  );
+};
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <MusicProvider>
+      <MusicApp />
+    </MusicProvider>
   );
 };
 
