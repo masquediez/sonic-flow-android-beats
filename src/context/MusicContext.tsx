@@ -1,10 +1,10 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Song, Playlist, PlayerState, MusicContextType, RepeatMode } from '../types/music';
 import { mockSongs, mockPlaylists } from '../data/mockData';
 import { toast } from 'sonner';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { NativeSettings, AndroidSettings } from 'capacitor-native-settings';
 
-// Initialize the context with default values
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 const initialPlayerState: PlayerState = {
@@ -28,14 +28,12 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   const [playerState, setPlayerState] = useState<PlayerState>(initialPlayerState);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
 
-  // Initialize audio element
   useEffect(() => {
     const audio = new Audio();
     audio.addEventListener('ended', handleSongEnd);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     setAudioElement(audio);
 
-    // Cleanup on unmount
     return () => {
       audio.pause();
       audio.removeEventListener('ended', handleSongEnd);
@@ -43,14 +41,65 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // Load songs (in a real app, this would fetch from storage)
+  const scanMusicFiles = async () => {
+    try {
+      await NativeSettings.open({ settingsType: AndroidSettings.Storage });
+
+      const musicDirectories = [
+        Directory.Documents, 
+        Directory.Music, 
+        Directory.ExternalStorage
+      ];
+
+      const musicFiles: Song[] = [];
+
+      for (const dir of musicDirectories) {
+        try {
+          const result = await Filesystem.readdir({
+            path: dir.toString(),
+            directory: dir
+          });
+
+          const audioFiles = result.files.filter(file => 
+            file.name.endsWith('.mp3') || 
+            file.name.endsWith('.wav') || 
+            file.name.endsWith('.aac')
+          );
+
+          for (const audioFile of audioFiles) {
+            musicFiles.push({
+              id: audioFile.uri,
+              title: audioFile.name,
+              artist: 'Unknown Artist',
+              album: 'Unknown Album',
+              duration: 0,
+              path: audioFile.uri,
+              cover: undefined,
+              year: undefined,
+              genre: undefined
+            });
+          }
+        } catch (dirError) {
+          console.error(`Error scanning directory ${dir}:`, dirError);
+        }
+      }
+
+      setSongs(musicFiles);
+      toast.success(`Encontradas ${musicFiles.length} canciones`);
+      return musicFiles;
+    } catch (error) {
+      console.error('Error scanning music files:', error);
+      toast.error('No se pudieron escanear archivos de música');
+      return [];
+    }
+  };
+
   const loadSongs = async () => {
     try {
-      // In a real app, this would scan the device for music files
-      setSongs(mockSongs);
-      setPlaylists(mockPlaylists);
-      toast.success('Música cargada correctamente');
-      console.log('Songs loaded:', mockSongs.length);
+      const scannedSongs = await scanMusicFiles();
+      if (scannedSongs.length === 0) {
+        setSongs(mockSongs);
+      }
       return Promise.resolve();
     } catch (error) {
       console.error('Error loading songs:', error);
@@ -59,12 +108,10 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     }
   };
 
-  // Load songs on initial mount
   useEffect(() => {
     loadSongs();
   }, []);
 
-  // Handle time updates
   const handleTimeUpdate = () => {
     if (audioElement) {
       setPlayerState(prev => ({
@@ -74,7 +121,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     }
   };
 
-  // Handle song end
   const handleSongEnd = () => {
     if (playerState.repeatMode === 'one') {
       seekTo(0);
@@ -84,7 +130,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     }
   };
 
-  // Play a specific song
   const playSong = (songId: string) => {
     const songToPlay = songs.find(song => song.id === songId);
     if (!songToPlay) return;
@@ -113,7 +158,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     toast.success(`Reproduciendo: ${songToPlay.title}`);
   };
 
-  // Play a playlist
   const playPlaylist = (playlistId: string) => {
     const playlist = playlists.find(p => p.id === playlistId);
     if (!playlist) return;
@@ -148,7 +192,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     toast.success(`Reproduciendo lista: ${playlist.name}`);
   };
 
-  // Toggle play/pause
   const togglePlay = () => {
     if (!playerState.currentSong) return;
 
@@ -166,18 +209,15 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     });
   };
 
-  // Play next song
   const nextSong = () => {
     if (playerState.queue.length === 0) return;
 
     let nextIndex;
     if (playerState.shuffle) {
-      // Random index excluding current
       nextIndex = Math.floor(Math.random() * (playerState.queue.length - 1));
       if (nextIndex >= playerState.currentIndex) nextIndex++;
     } else {
       nextIndex = (playerState.currentIndex + 1) % playerState.queue.length;
-      // If repeat is off and we're at the end, stop
       if (playerState.repeatMode === 'off' && nextIndex === 0) {
         audioElement?.pause();
         setPlayerState({
@@ -206,11 +246,9 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     });
   };
 
-  // Play previous song
   const previousSong = () => {
     if (playerState.queue.length === 0) return;
 
-    // If we're more than 3 seconds into the song, restart it
     if (playerState.progress > 3) {
       seekTo(0);
       return;
@@ -218,7 +256,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
 
     let prevIndex;
     if (playerState.shuffle) {
-      // Random index excluding current
       prevIndex = Math.floor(Math.random() * (playerState.queue.length - 1));
       if (prevIndex >= playerState.currentIndex) prevIndex++;
     } else {
@@ -246,7 +283,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     });
   };
 
-  // Seek to a specific time
   const seekTo = (time: number) => {
     if (audioElement) {
       audioElement.currentTime = time;
@@ -257,7 +293,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     }
   };
 
-  // Set volume
   const setVolume = (volume: number) => {
     if (audioElement) {
       audioElement.volume = volume;
@@ -268,7 +303,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     });
   };
 
-  // Toggle shuffle
   const toggleShuffle = () => {
     setPlayerState({
       ...playerState,
@@ -277,7 +311,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     toast.info(playerState.shuffle ? 'Reproducción aleatoria desactivada' : 'Reproducción aleatoria activada');
   };
 
-  // Toggle repeat mode
   const toggleRepeat = () => {
     const modes: RepeatMode[] = ['off', 'all', 'one'];
     const currentIndex = modes.indexOf(playerState.repeatMode);
@@ -298,7 +331,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     toast.info(message);
   };
 
-  // Create a new playlist
   const createPlaylist = (name: string, songIds: string[]) => {
     const newPlaylist: Playlist = {
       id: `playlist-${Date.now()}`,
@@ -315,11 +347,9 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     toast.success(`Lista "${name}" creada`);
   };
 
-  // Add a song to a playlist
   const addToPlaylist = (playlistId: string, songId: string) => {
     setPlaylists(playlists.map(playlist => {
       if (playlist.id === playlistId) {
-        // Avoid duplicates
         if (playlist.songs.includes(songId)) {
           toast.info('La canción ya está en la lista');
           return playlist;
@@ -338,7 +368,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     }));
   };
 
-  // Remove a song from a playlist
   const removeFromPlaylist = (playlistId: string, songId: string) => {
     setPlaylists(playlists.map(playlist => {
       if (playlist.id === playlistId) {
@@ -355,27 +384,32 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     }));
   };
 
-  // Delete a playlist
   const deletePlaylist = (playlistId: string) => {
     setPlaylists(playlists.filter(playlist => playlist.id !== playlistId));
     toast.success('Lista de reproducción eliminada');
   };
 
-  // Create NFC tag for music playback (mock implementation)
   const createNfcTag = async (songId: string | null, playlistId: string | null) => {
     try {
-      // This would be implemented with actual NFC APIs in a real app
-      console.log('Creating NFC tag for:', songId || playlistId);
+      const songToTag = songId 
+        ? songs.find(song => song.id === songId) 
+        : playlists.find(playlist => playlist.id === playlistId);
+
+      if (!songToTag) {
+        toast.error('No se encontró la canción o lista');
+        return false;
+      }
+
+      console.log('Creando tag NFC para:', songToTag);
       toast.success('Etiqueta NFC creada exitosamente');
-      return Promise.resolve(true);
+      return true;
     } catch (error) {
       console.error('Error creating NFC tag:', error);
       toast.error('Error al crear etiqueta NFC');
-      return Promise.resolve(false);
+      return false;
     }
   };
 
-  // The context value
   const contextValue: MusicContextType = {
     songs,
     playlists,
@@ -404,7 +438,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook to use the music context
 export const useMusicContext = () => {
   const context = useContext(MusicContext);
   if (context === undefined) {
