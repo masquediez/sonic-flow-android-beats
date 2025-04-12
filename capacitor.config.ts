@@ -10,11 +10,15 @@ const config: CapacitorConfig = {
     cleartext: true
   },
   plugins: {
-    // Here we would configure native plugins
-    // For example, for file access permissions:
-    // Permissions: {
-    //   permissions: ['storage']
-    // }
+    // Configuring permissions for Android
+    Permissions: {
+      permissions: [
+        'android.permission.READ_EXTERNAL_STORAGE',
+        'android.permission.WRITE_EXTERNAL_STORAGE',
+        'android.permission.MANAGE_EXTERNAL_STORAGE',
+        'android.permission.NFC'
+      ]
+    }
   }
 };
 

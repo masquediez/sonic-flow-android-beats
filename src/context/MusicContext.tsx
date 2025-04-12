@@ -3,7 +3,7 @@ import { Song, Playlist, PlayerState, MusicContextType, RepeatMode } from '../ty
 import { mockSongs, mockPlaylists } from '../data/mockData';
 import { toast } from 'sonner';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { NativeSettings, AndroidSettings } from 'capacitor-native-settings';
+import { NativeSettings, IOSSettings, AndroidSettings } from 'capacitor-native-settings';
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
@@ -43,7 +43,9 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
 
   const scanMusicFiles = async () => {
     try {
-      await NativeSettings.open({ settingsType: AndroidSettings.Storage });
+      await NativeSettings.open({
+        type: AndroidSettings.ApplicationDetails
+      });
 
       const musicDirectories = [
         Directory.Documents, 
@@ -68,12 +70,12 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
 
           for (const audioFile of audioFiles) {
             musicFiles.push({
-              id: audioFile.uri,
+              id: audioFile.uri || audioFile.path || '',
               title: audioFile.name,
               artist: 'Unknown Artist',
               album: 'Unknown Album',
               duration: 0,
-              path: audioFile.uri,
+              path: audioFile.uri || audioFile.path || '',
               cover: undefined,
               year: undefined,
               genre: undefined
