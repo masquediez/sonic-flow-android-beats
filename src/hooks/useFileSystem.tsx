@@ -19,9 +19,8 @@ export const useFileSystem = (
 ) => {
   const scanMusicFiles = useCallback(async () => {
     try {
-      await NativeSettings.open({
-        androidUseSystemDefault: true
-      });
+      // Open settings without the androidUseSystemDefault property
+      await NativeSettings.open();
 
       const musicDirectories = [
         Directory.Documents,
