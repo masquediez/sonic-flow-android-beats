@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Song } from '@/types/music';
 import { formatTime } from '@/utils/timeUtils';
-import { MoreVertical, Play, Plus } from 'lucide-react';
+import { MoreVertical, Play, Plus, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -30,6 +30,18 @@ const SongList: React.FC<SongListProps> = ({
 }) => {
   const { playlists, addToPlaylist, createNfcTag } = useMusicContext();
 
+  // Helper to determine if a song is a playlist file (.m3u)
+  const isPlaylistFile = (song: Song): boolean => {
+    return song.path.toLowerCase().endsWith('.m3u');
+  };
+
+  // Get appropriate icon based on song type
+  const getSongIcon = (song: Song) => {
+    return isPlaylistFile(song) ? 
+      <Music size={20} className="text-green-400" /> : 
+      <Play size={20} className="text-white" />;
+  };
+
   return (
     <div className="w-full">
       <div className="grid grid-cols-[1fr,auto,auto] gap-4 px-4 py-2 text-sm text-gray-400 border-b border-gray-800">
@@ -44,7 +56,8 @@ const SongList: React.FC<SongListProps> = ({
             key={song.id}
             className={cn(
               "grid grid-cols-[1fr,auto,auto] gap-4 px-4 py-3 hover:bg-white/5 cursor-pointer",
-              currentSongId === song.id && "bg-white/10"
+              currentSongId === song.id && "bg-white/10",
+              isPlaylistFile(song) && "bg-gray-900/40"
             )}
             onClick={() => onSongSelect(song.id)}
           >
@@ -56,12 +69,17 @@ const SongList: React.FC<SongListProps> = ({
                   className="w-full h-full object-cover rounded"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded">
-                  <Play size={20} className="text-white" />
+                  {getSongIcon(song)}
                 </div>
               </div>
               
               <div className="flex flex-col min-w-0">
-                <h3 className="font-medium text-white truncate">{song.title}</h3>
+                <h3 className="font-medium text-white truncate">
+                  {song.title}
+                  {isPlaylistFile(song) && 
+                    <span className="ml-2 text-xs text-gray-400 font-normal">(Lista M3U)</span>
+                  }
+                </h3>
                 <p className="text-sm text-gray-400 truncate">{song.artist}</p>
               </div>
             </div>
@@ -86,6 +104,7 @@ const SongList: React.FC<SongListProps> = ({
                     onClick={(e) => {
                       e.stopPropagation();
                       createNfcTag(song.id, null);
+                      toast.success(`Etiqueta NFC creada para "${song.title}"`);
                     }}
                   >
                     Crear etiqueta NFC
