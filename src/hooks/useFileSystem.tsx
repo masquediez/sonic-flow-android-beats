@@ -1,10 +1,9 @@
-
 import { useCallback } from 'react';
 import { Song } from '../types/music';
 import { mockSongs } from '../data/mockData';
 import { toast } from 'sonner';
 import { Filesystem } from '@capacitor/filesystem';
-import { NativeSettings, AndroidSettings } from 'capacitor-native-settings';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 
 export enum Directory {
   Documents = 'DOCUMENTS',
@@ -22,7 +21,7 @@ export const useFileSystem = (
       // Use the correct NativeSettings.open() with proper argument
       await NativeSettings.open({
         optionAndroid: AndroidSettings.Storage,
-        optionIOS: 'WIFI' // Adding missing iOS option to fix build error
+        optionIOS: IOSSettings.WiFi // Corregido: usando el valor enumerado adecuado
       });
 
       const musicDirectories = [
