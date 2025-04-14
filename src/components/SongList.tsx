@@ -1,16 +1,21 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Song } from '@/types/music';
 import { formatTime } from '@/utils/timeUtils';
-import { MoreVertical, Play } from 'lucide-react';
+import { MoreVertical, Play, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useMusicContext } from '@/context/MusicContext';
+import { toast } from 'sonner';
 
 interface SongListProps {
   songs: Song[];
@@ -86,25 +91,38 @@ const SongList: React.FC<SongListProps> = ({
                     Crear etiqueta NFC
                   </DropdownMenuItem>
                   
-                  {playlists.length > 0 && (
-                    <>
-                      <DropdownMenuItem className="font-semibold opacity-70">
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  
+                  {playlists.length > 0 ? (
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="cursor-pointer">
+                        <Plus size={16} className="mr-2" />
                         Añadir a lista de reproducción
-                      </DropdownMenuItem>
-                      
-                      {playlists.map(playlist => (
-                        <DropdownMenuItem 
-                          key={playlist.id}
-                          className="pl-6 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToPlaylist(playlist.id, song.id);
-                          }}
-                        >
-                          {playlist.name}
-                        </DropdownMenuItem>
-                      ))}
-                    </>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="bg-gray-900 border-gray-800 text-white">
+                        {playlists.map(playlist => (
+                          <DropdownMenuItem 
+                            key={playlist.id}
+                            className="cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToPlaylist(playlist.id, song.id);
+                              toast.success(`"${song.title}" añadida a "${playlist.name}"`);
+                            }}
+                          >
+                            {playlist.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  ) : (
+                    <DropdownMenuItem 
+                      className="cursor-pointer opacity-50"
+                      disabled
+                    >
+                      <Plus size={16} className="mr-2" />
+                      No hay listas disponibles
+                    </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>

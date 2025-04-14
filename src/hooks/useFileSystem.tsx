@@ -21,7 +21,8 @@ export const useFileSystem = (
     try {
       // Use the correct NativeSettings.open() with proper argument
       await NativeSettings.open({
-        optionAndroid: AndroidSettings.Storage
+        optionAndroid: AndroidSettings.Storage,
+        optionIOS: 'WIFI' // Adding missing iOS option to fix build error
       });
 
       const musicDirectories = [
