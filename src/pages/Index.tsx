@@ -8,7 +8,7 @@ import FullPlayer from '@/components/FullPlayer';
 import NewPlaylistDialog from '@/components/NewPlaylistDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { ListMusic, Library, Plus, RefreshCw, Zap } from 'lucide-react';
+import { ListMusic, Library, Plus, RefreshCw, Zap, HardDrive } from 'lucide-react';
 
 const MusicApp: React.FC = () => {
   const { 
@@ -60,12 +60,16 @@ const MusicApp: React.FC = () => {
           <Button 
             variant="outline" 
             size="sm"
-            className="bg-transparent border-gray-700 text-white hover:bg-gray-800"
+            className="bg-transparent border-gray-700 text-white hover:bg-gray-800 flex items-center"
             onClick={handleRefresh}
             disabled={isLoading}
           >
-            <RefreshCw size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
+            {isLoading ? (
+              <RefreshCw size={16} className="mr-2 animate-spin" />
+            ) : (
+              <HardDrive size={16} className="mr-2" />
+            )}
+            {isLoading ? 'Buscando...' : 'Buscar Música'}
           </Button>
           
           <Button 
