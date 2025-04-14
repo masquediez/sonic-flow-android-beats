@@ -4,7 +4,7 @@ import { Song } from '../types/music';
 import { mockSongs } from '../data/mockData';
 import { toast } from 'sonner';
 import { Filesystem } from '@capacitor/filesystem';
-import { NativeSettings } from 'capacitor-native-settings';
+import { NativeSettings, AndroidSettings } from 'capacitor-native-settings';
 
 export enum Directory {
   Documents = 'DOCUMENTS',
@@ -19,8 +19,10 @@ export const useFileSystem = (
 ) => {
   const scanMusicFiles = useCallback(async () => {
     try {
-      // Open settings without the androidUseSystemDefault property
-      await NativeSettings.open();
+      // Use the correct NativeSettings.open() with proper argument
+      await NativeSettings.open({
+        optionAndroid: AndroidSettings.Storage
+      });
 
       const musicDirectories = [
         Directory.Documents,
