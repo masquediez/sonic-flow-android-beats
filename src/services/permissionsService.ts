@@ -19,7 +19,8 @@ export class PermissionsService {
     
     try {
       await NativeSettings.open({
-        optionAndroid: AndroidSettings.ApplicationDetails
+        optionAndroid: AndroidSettings.ApplicationDetails,
+        optionIOS: '' // Add the required field for PlatformOptions type
       });
       
       // Give user a moment to grant permissions if needed

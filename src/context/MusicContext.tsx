@@ -1,6 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Song, Playlist, PlayerState, MusicContextType, RepeatMode } from '../types/music';
-import { mockSongs, mockPlaylists } from '../data/mockData';
 import { toast } from 'sonner';
 import { useMusicPlayer } from '../hooks/useMusicPlayer';
 import { useFileSystem } from '../hooks/useFileSystem';

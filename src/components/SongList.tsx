@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Song } from '@/types/music';
 import { formatTime } from '@/utils/timeUtils';
-import { MoreVertical, Play, Plus, Music } from 'lucide-react';
+import { MoreVertical, Play, Plus, Music, FileWarning } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -42,6 +42,19 @@ const SongList: React.FC<SongListProps> = ({
       <Play size={20} className="text-white" />;
   };
 
+  // Show a message when no songs are found
+  if (songs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <FileWarning size={64} className="text-gray-500 mb-4" />
+        <h3 className="text-xl font-medium text-white mb-2">No se encontraron archivos de música</h3>
+        <p className="text-gray-400 max-w-md">
+          No se encontraron archivos mp3 o m3u en tu dispositivo. Asegúrate de tener permisos de almacenamiento y archivos de música en tu dispositivo.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full">
       <div className="grid grid-cols-[1fr,auto,auto] gap-4 px-4 py-2 text-sm text-gray-400 border-b border-gray-800">
@@ -64,9 +77,13 @@ const SongList: React.FC<SongListProps> = ({
             <div className="flex items-center space-x-3 min-w-0">
               <div className="relative group w-10 h-10 flex-shrink-0">
                 <img 
-                  src={song.cover} 
+                  src={song.cover || '/placeholder.svg'} 
                   alt={song.title}
                   className="w-full h-full object-cover rounded"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/placeholder.svg';
+                  }}
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded">
                   {getSongIcon(song)}

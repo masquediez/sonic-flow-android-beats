@@ -45,10 +45,16 @@ export const getAndroidMusicPaths = (): string[] => {
   return [
     '/storage/emulated/0/Music',
     '/storage/emulated/0/Download',
+    '/storage/emulated/0/DCIM',
     '/sdcard/Music',
     '/sdcard/Download',
+    '/sdcard/DCIM',
     '/storage/emulated/0',
-    '/sdcard'
+    '/sdcard',
+    '/storage/sdcard0/Music',
+    '/storage/sdcard0/Download',
+    '/storage/sdcard1/Music',
+    '/storage/sdcard1/Download'
   ];
 };
 

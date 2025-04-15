@@ -8,7 +8,7 @@ import FullPlayer from '@/components/FullPlayer';
 import NewPlaylistDialog from '@/components/NewPlaylistDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { ListMusic, Library, Plus, RefreshCw, Zap, HardDrive } from 'lucide-react';
+import { ListMusic, Library, Plus, RefreshCw, Zap, HardDrive, FileQuestion } from 'lucide-react';
 
 const MusicApp: React.FC = () => {
   const { 
@@ -77,6 +77,7 @@ const MusicApp: React.FC = () => {
             size="sm"
             className="bg-transparent border-gray-700 text-white hover:bg-gray-800"
             onClick={handleTagNFC}
+            disabled={!playerState.currentSong}
           >
             <Zap size={16} className="mr-2" />
             Crear NFC
@@ -106,6 +107,21 @@ const MusicApp: React.FC = () => {
           </div>
           
           <TabsContent value="songs" className="mt-0">
+            {songs.length === 0 && !isLoading && (
+              <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                <FileQuestion size={48} className="text-gray-500 mb-3" />
+                <p className="text-gray-400 mb-4">
+                  Presiona "Buscar Música" para escanear los archivos de tu dispositivo
+                </p>
+                <Button
+                  onClick={handleRefresh}
+                  className="bg-player-primary hover:bg-opacity-90"
+                >
+                  <HardDrive size={16} className="mr-2" />
+                  Buscar archivos de música
+                </Button>
+              </div>
+            )}
             <SongList 
               songs={songs}
               onSongSelect={handleSongSelect}
