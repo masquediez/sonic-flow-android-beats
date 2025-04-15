@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Song, Playlist, PlayerState, MusicContextType, RepeatMode } from '../types/music';
 import { mockSongs, mockPlaylists } from '../data/mockData';
@@ -8,6 +7,7 @@ import { useFileSystem } from '../hooks/useFileSystem';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useNfcManager } from '../hooks/useNfcManager';
 import { Capacitor } from '@capacitor/core';
+import { formatPathForAndroid } from '../utils/fileUtils';
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
@@ -32,7 +32,6 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   const [playerState, setPlayerState] = useState<PlayerState>(initialPlayerState);
   const isAndroid = Capacitor.getPlatform() === 'android';
 
-  // Hooks con la lógica extraída
   const { audioElement, handleTimeUpdate, handleSongEnd, seekTo, setVolume, togglePlay, nextSong, previousSong } = 
     useMusicPlayer(playerState, setPlayerState);
   
@@ -60,12 +59,8 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     const newIndex = newQueue.findIndex(song => song.id === songId);
 
     if (audioElement) {
-      // For Android, prepend file:// to the path if it's a local file and doesn't already have it
-      let audioPath = songToPlay.path;
-      if (isAndroid && audioPath && !audioPath.startsWith('file://') && !audioPath.startsWith('http')) {
-        audioPath = `file://${audioPath}`;
-        console.log('Using modified Android path:', audioPath);
-      }
+      const audioPath = formatPathForAndroid(songToPlay.path);
+      console.log('Using path:', audioPath);
       
       audioElement.src = audioPath;
       audioElement.load();
@@ -108,12 +103,8 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
 
     console.log(`Playing playlist: ${playlist.name} with ${playlistSongs.length} songs`);
     
-    // For Android, prepend file:// to the path if it's a local file and doesn't already have it
-    let audioPath = playlistSongs[0].path;
-    if (isAndroid && audioPath && !audioPath.startsWith('file://') && !audioPath.startsWith('http')) {
-      audioPath = `file://${audioPath}`;
-      console.log('Using modified Android path for playlist:', audioPath);
-    }
+    const audioPath = formatPathForAndroid(playlistSongs[0].path);
+    console.log('Using path for playlist:', audioPath);
 
     setPlayerState({
       ...playerState,
