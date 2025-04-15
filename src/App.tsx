@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useEffect } from 'react';
+import { isAndroid } from './utils/environment';
 
 const queryClient = new QueryClient();
 
@@ -15,6 +16,7 @@ const App = () => {
   useEffect(() => {
     // This would be where we set up any native Android functionality
     console.log("App initialized - ready for Capacitor integration");
+    console.log("App running on platform:", isAndroid() ? "Android" : "Web");
     
     const handleBackButton = () => {
       // Handle Android back button press

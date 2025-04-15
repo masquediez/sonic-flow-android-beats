@@ -8,6 +8,8 @@ import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useNfcManager } from '../hooks/useNfcManager';
 import { Capacitor } from '@capacitor/core';
 import { formatPathForAndroid } from '../utils/fileUtils';
+import { isWebDevelopment } from '../utils/environment';
+import { mockSongs } from '../data/mockData';
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
@@ -43,7 +45,14 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   const { createNfcTag } = useNfcManager(songs, playlists);
 
   useEffect(() => {
-    loadSongs();
+    // Only use mock data in web development mode
+    if (isWebDevelopment()) {
+      console.log('Running in web development mode, using mock data');
+      setSongs(mockSongs);
+    } else {
+      console.log('Running in production or native mode, loading actual songs');
+      loadSongs();
+    }
   }, []);
 
   const playSong = (songId: string) => {
