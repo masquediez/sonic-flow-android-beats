@@ -7,6 +7,7 @@ import { useMusicPlayer } from '../hooks/useMusicPlayer';
 import { useFileSystem } from '../hooks/useFileSystem';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useNfcManager } from '../hooks/useNfcManager';
+import { Capacitor } from '@capacitor/core';
 
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
@@ -29,6 +30,7 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playerState, setPlayerState] = useState<PlayerState>(initialPlayerState);
+  const isAndroid = Capacitor.getPlatform() === 'android';
 
   // Hooks con la lógica extraída
   const { audioElement, handleTimeUpdate, handleSongEnd, seekTo, setVolume, togglePlay, nextSong, previousSong } = 
@@ -47,18 +49,33 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
 
   const playSong = (songId: string) => {
     const songToPlay = songs.find(song => song.id === songId);
-    if (!songToPlay) return;
+    if (!songToPlay) {
+      toast.error("No se encontró la canción");
+      return;
+    }
 
+    console.log(`Playing song: ${songToPlay.title} from path: ${songToPlay.path}`);
+    
     const newQueue = [...songs];
     const newIndex = newQueue.findIndex(song => song.id === songId);
 
     if (audioElement) {
-      audioElement.src = songToPlay.path;
+      // For Android, prepend file:// to the path if it's a local file and doesn't already have it
+      let audioPath = songToPlay.path;
+      if (isAndroid && audioPath && !audioPath.startsWith('file://') && !audioPath.startsWith('http')) {
+        audioPath = `file://${audioPath}`;
+        console.log('Using modified Android path:', audioPath);
+      }
+      
+      audioElement.src = audioPath;
       audioElement.load();
       audioElement.play().catch(err => {
         console.error("Error playing audio:", err);
-        toast.error("No se pudo reproducir la canción");
+        toast.error(`No se pudo reproducir "${songToPlay.title}": ${err.message}`);
       });
+    } else {
+      console.error("Audio element not initialized");
+      toast.error("El reproductor de audio no está inicializado");
     }
 
     setPlayerState({
@@ -75,7 +92,10 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
 
   const playPlaylist = (playlistId: string) => {
     const playlist = playlists.find(p => p.id === playlistId);
-    if (!playlist) return;
+    if (!playlist) {
+      toast.error("No se encontró la lista de reproducción");
+      return;
+    }
 
     const playlistSongs = playlist.songs
       .map(songId => songs.find(song => song.id === songId))
@@ -84,6 +104,15 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     if (playlistSongs.length === 0) {
       toast.error('La lista de reproducción está vacía');
       return;
+    }
+
+    console.log(`Playing playlist: ${playlist.name} with ${playlistSongs.length} songs`);
+    
+    // For Android, prepend file:// to the path if it's a local file and doesn't already have it
+    let audioPath = playlistSongs[0].path;
+    if (isAndroid && audioPath && !audioPath.startsWith('file://') && !audioPath.startsWith('http')) {
+      audioPath = `file://${audioPath}`;
+      console.log('Using modified Android path for playlist:', audioPath);
     }
 
     setPlayerState({
@@ -96,12 +125,15 @@ export const MusicProvider: React.FC<MusicProviderProps> = ({ children }) => {
     });
 
     if (audioElement) {
-      audioElement.src = playlistSongs[0].path;
+      audioElement.src = audioPath;
       audioElement.load();
       audioElement.play().catch(err => {
         console.error("Error playing playlist:", err);
-        toast.error("No se pudo reproducir la lista");
+        toast.error(`No se pudo reproducir la lista: ${err.message}`);
       });
+    } else {
+      console.error("Audio element not initialized for playlist");
+      toast.error("El reproductor de audio no está inicializado");
     }
 
     toast.success(`Reproduciendo lista: ${playlist.name}`);

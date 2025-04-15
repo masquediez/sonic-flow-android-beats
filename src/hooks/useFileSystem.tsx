@@ -21,7 +21,8 @@ export const useFileSystem = (
       if (isAndroid) {
         try {
           await NativeSettings.open({
-            optionAndroid: AndroidSettings.ApplicationDetails
+            optionAndroid: AndroidSettings.ApplicationDetails,
+            optionIOS: IOSSettings.Root // Adding required iOS option even though we won't use it on Android
           });
           
           // Give user a moment to grant permissions if needed
