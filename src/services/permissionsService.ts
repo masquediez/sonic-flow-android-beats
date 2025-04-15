@@ -1,5 +1,5 @@
 
-import { NativeSettings, AndroidSettings } from 'capacitor-native-settings';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { Capacitor } from '@capacitor/core';
 import { toast } from 'sonner';
 
@@ -20,7 +20,7 @@ export class PermissionsService {
     try {
       await NativeSettings.open({
         optionAndroid: AndroidSettings.ApplicationDetails,
-        optionIOS: '' // Add the required field for PlatformOptions type
+        optionIOS: IOSSettings.App
       });
       
       // Give user a moment to grant permissions if needed
