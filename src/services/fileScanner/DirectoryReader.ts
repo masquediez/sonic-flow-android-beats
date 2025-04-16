@@ -14,6 +14,8 @@ export class DirectoryReader implements IDirectoryReader {
     path: string
   ): Promise<DirectoryReadResult> {
     try {
+      console.log(`Attempting to read directory ${directoryType} at path ${path}`);
+      
       const options: ReaddirOptions = {
         path: path,
         directory: directoryType as Directory
@@ -21,6 +23,7 @@ export class DirectoryReader implements IDirectoryReader {
       
       // Read the directory
       const result = await Filesystem.readdir(options);
+      console.log(`Successfully read directory with ${result.files.length} files`);
       
       return {
         files: result.files,
@@ -28,6 +31,8 @@ export class DirectoryReader implements IDirectoryReader {
       };
     } catch (err) {
       console.error(`Error reading directory ${directoryType} at path ${path}:`, err);
+      
+      // Return an empty result but don't throw to allow scanning to continue
       return {
         files: [],
         directoriesAccessed: 0
@@ -43,11 +48,15 @@ export class DirectoryReader implements IDirectoryReader {
     path: string
   ): Promise<DirectoryReadResult> {
     try {
+      console.log(`Attempting to read subdirectory at path ${path}`);
+      
       // Read the subdirectory
       const result = await Filesystem.readdir({
         path: path,
         directory: directoryType as Directory
       });
+      
+      console.log(`Successfully read subdirectory with ${result.files.length} files`);
       
       return {
         files: result.files,
@@ -55,6 +64,8 @@ export class DirectoryReader implements IDirectoryReader {
       };
     } catch (err) {
       console.error(`Error reading subdirectory at path ${path}:`, err);
+      
+      // Return an empty result but don't throw to allow scanning to continue
       return {
         files: [],
         directoriesAccessed: 0

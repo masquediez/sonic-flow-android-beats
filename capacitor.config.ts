@@ -18,6 +18,15 @@ const config: CapacitorConfig = {
         'android.permission.MANAGE_EXTERNAL_STORAGE',
         'android.permission.NFC'
       ]
+    },
+    // Disable splash screen for better file system access
+    SplashScreen: {
+      launchAutoHide: true,
+      showSpinner: false
+    },
+    // Enable Android permissions handling
+    AndroidPermissions: {
+      autoRequestAllPermissions: true
     }
   }
 };

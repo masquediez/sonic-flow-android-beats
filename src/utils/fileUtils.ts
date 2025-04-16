@@ -23,7 +23,7 @@ export const getFileName = (fileName: string): string => {
  * Get the supported audio extensions
  */
 export const getValidAudioExtensions = (): string[] => {
-  return ['.mp3', '.wav', '.aac', '.m3u', '.ogg', '.flac'];
+  return ['.mp3', '.wav', '.aac', '.m3u', '.ogg', '.flac', '.m4a', '.wma'];
 };
 
 /**
@@ -43,18 +43,31 @@ export const getMusicDirectories = () => {
  */
 export const getAndroidMusicPaths = (): string[] => {
   return [
+    // Primary external storage
     '/storage/emulated/0/Music',
     '/storage/emulated/0/Download',
     '/storage/emulated/0/DCIM',
-    '/sdcard/Music',
-    '/sdcard/Download',
-    '/sdcard/DCIM',
-    '/storage/emulated/0',
-    '/sdcard',
+    '/storage/self/primary/Music',
+    '/storage/self/primary/Download',
+    '/storage/self/primary/DCIM',
+    
+    // SD Card paths
     '/storage/sdcard0/Music',
     '/storage/sdcard0/Download',
     '/storage/sdcard1/Music',
-    '/storage/sdcard1/Download'
+    '/storage/sdcard1/Download',
+    
+    // Common Android paths
+    '/sdcard/Music',
+    '/sdcard/Download',
+    '/sdcard/DCIM',
+    
+    // Root directories to scan 
+    '/storage/emulated/0',
+    '/storage/self/primary',
+    '/sdcard',
+    '/storage/sdcard0',
+    '/storage/sdcard1'
   ];
 };
 

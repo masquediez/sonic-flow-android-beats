@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Song } from '../types/music';
 import { toast } from 'sonner';
 import { FileScannerService } from '../services/fileScannerService';
@@ -11,14 +11,30 @@ export const useFileSystem = (
 ) => {
   const fileScannerService = new FileScannerService();
   const permissionsService = new PermissionsService();
+  const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
   
   const scanMusicFiles = useCallback(async () => {
+    if (isRequestingPermissions) {
+      console.log('Already requesting permissions, skipping');
+      return [];
+    }
+    
     try {
       // Always show a toast to indicate scanning has started
       toast.info('Buscando archivos de música...');
       
       // Request storage permissions for Android devices
-      await permissionsService.requestStoragePermissions();
+      setIsRequestingPermissions(true);
+      const permissionsGranted = await permissionsService.requestStoragePermissions();
+      setIsRequestingPermissions(false);
+      
+      if (!permissionsGranted) {
+        toast.error('Permisos de almacenamiento denegados. No se puede acceder a los archivos de música.');
+        return [];
+      }
+      
+      // Request NFC permissions while we're at it
+      permissionsService.requestNfcPermissions();
 
       // Scan music files
       const { musicFiles, filesScanned, directoriesAccessed } = 
@@ -34,10 +50,11 @@ export const useFileSystem = (
     } catch (error) {
       console.error('Error scanning music files:', error);
       toast.error('No se pudieron escanear archivos de música. Verifica los permisos.');
+      setIsRequestingPermissions(false);
       setSongs([]);
       return [];
     }
-  }, [setSongs, fileScannerService, permissionsService]);
+  }, [setSongs, fileScannerService, permissionsService, isRequestingPermissions]);
 
   const loadSongs = useCallback(async () => {
     try {
@@ -52,6 +69,7 @@ export const useFileSystem = (
 
   return {
     scanMusicFiles,
-    loadSongs
+    loadSongs,
+    isRequestingPermissions
   };
 };

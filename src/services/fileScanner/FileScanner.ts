@@ -25,8 +25,26 @@ export class FileScanner {
     let filesScanned = 0;
     let directoriesAccessed = 0;
 
-    // Scan standard directories first
+    console.log('Starting music scan...');
+    
+    // For Android, first try common music folder paths
+    if (this.isAndroid) {
+      console.log('Scanning Android paths first...');
+      const androidResult = await this.scanAndroidPaths(
+        musicFiles,
+        filesScanned,
+        directoriesAccessed
+      );
+      
+      filesScanned = androidResult.filesScanned;
+      directoriesAccessed = androidResult.directoriesAccessed;
+      
+      console.log(`After Android paths: ${musicFiles.length} music files found`);
+    }
+
+    // Then try standard directories
     for (const dir of this.musicDirectories) {
+      console.log(`Scanning standard directory: ${dir}`);
       const result = await this.scanDirectory(
         dir, 
         '/',
@@ -37,20 +55,11 @@ export class FileScanner {
       
       filesScanned = result.filesScanned;
       directoriesAccessed = result.directoriesAccessed;
-    }
-
-    // For Android, also try specific music folder paths
-    if (this.isAndroid) {
-      const androidResult = await this.scanAndroidPaths(
-        musicFiles,
-        filesScanned,
-        directoriesAccessed
-      );
       
-      filesScanned = androidResult.filesScanned;
-      directoriesAccessed = androidResult.directoriesAccessed;
+      console.log(`After ${dir}: ${musicFiles.length} music files found`);
     }
 
+    console.log('Music scan complete.');
     return {
       musicFiles,
       filesScanned,
@@ -74,24 +83,53 @@ export class FileScanner {
       const result = await this.directoryReader.readDirectory(directoryType, path);
       directoriesAccessed += result.directoriesAccessed;
 
+      if (result.directoriesAccessed === 0) {
+        console.log(`Could not access directory: ${directoryType} at path: ${path}`);
+        return { musicFiles, filesScanned, directoriesAccessed };
+      }
+
       // Process the found files
       for (const file of result.files) {
         filesScanned++;
         
-        // For directories, try to scan them recursively (one level deep)
+        // For directories, try to scan them recursively (up to 3 levels deep)
         if (file.type === 'directory') {
           try {
             const subDirPath = file.uri || `${path === '/' ? '' : path}/${file.name}`;
             console.log(`Scanning subdirectory: ${subDirPath}`);
             
             const subDirResult = await this.directoryReader.readSubdirectory(directoryType, subDirPath);
+            directoriesAccessed += subDirResult.directoriesAccessed;
             
             // Process files in subdirectory
             for (const subFile of subDirResult.files) {
               filesScanned++;
-              const song = this.songMapper.mapFileToSong(subFile, subDirPath, file.name);
-              if (song) {
-                musicFiles.push(song);
+              
+              // Handle nested directories (one more level)
+              if (subFile.type === 'directory') {
+                try {
+                  const nestedPath = `${subDirPath}/${subFile.name}`;
+                  console.log(`Scanning nested directory: ${nestedPath}`);
+                  
+                  const nestedResult = await this.directoryReader.readSubdirectory(directoryType, nestedPath);
+                  directoriesAccessed += nestedResult.directoriesAccessed;
+                  
+                  // Process files in nested directory
+                  for (const nestedFile of nestedResult.files) {
+                    filesScanned++;
+                    const song = this.songMapper.mapFileToSong(nestedFile, nestedPath, subFile.name);
+                    if (song) {
+                      musicFiles.push(song);
+                    }
+                  }
+                } catch (nestedDirError) {
+                  console.log(`Error scanning nested directory ${subFile.name}:`, nestedDirError);
+                }
+              } else {
+                const song = this.songMapper.mapFileToSong(subFile, subDirPath, file.name);
+                if (song) {
+                  musicFiles.push(song);
+                }
               }
             }
           } catch (subDirError) {
@@ -133,6 +171,11 @@ export class FileScanner {
         const result = await this.directoryReader.readDirectory('ExternalStorage', path);
         directoriesAccessed += result.directoriesAccessed;
         
+        if (result.directoriesAccessed === 0) {
+          console.log(`Could not access Android path: ${path}`);
+          continue;
+        }
+        
         // Process files
         for (const file of result.files) {
           filesScanned++;
@@ -141,13 +184,43 @@ export class FileScanner {
             // Scan one level of subdirectories
             try {
               const subPath = `${path}/${file.name}`;
+              console.log(`Scanning Android subdirectory: ${subPath}`);
+              
               const subResult = await this.directoryReader.readSubdirectory('ExternalStorage', subPath);
+              directoriesAccessed += subResult.directoriesAccessed;
+              
+              if (subResult.directoriesAccessed === 0) {
+                console.log(`Could not access Android subdirectory: ${subPath}`);
+                continue;
+              }
               
               for (const subFile of subResult.files) {
                 filesScanned++;
-                const song = this.songMapper.mapFileToSong(subFile, subPath, file.name);
-                if (song) {
-                  musicFiles.push(song);
+                
+                // Handle nested directories
+                if (subFile.type === 'directory') {
+                  try {
+                    const nestedPath = `${subPath}/${subFile.name}`;
+                    console.log(`Scanning Android nested directory: ${nestedPath}`);
+                    
+                    const nestedResult = await this.directoryReader.readSubdirectory('ExternalStorage', nestedPath);
+                    directoriesAccessed += nestedResult.directoriesAccessed;
+                    
+                    for (const nestedFile of nestedResult.files) {
+                      filesScanned++;
+                      const song = this.songMapper.mapFileToSong(nestedFile, nestedPath, subFile.name);
+                      if (song) {
+                        musicFiles.push(song);
+                      }
+                    }
+                  } catch (nestedError) {
+                    console.log(`Error scanning Android nested directory ${subFile.name}:`, nestedError);
+                  }
+                } else {
+                  const song = this.songMapper.mapFileToSong(subFile, subPath, file.name);
+                  if (song) {
+                    musicFiles.push(song);
+                  }
                 }
               }
             } catch (subDirError) {
